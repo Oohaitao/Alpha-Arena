@@ -270,7 +270,7 @@ PROMPT_TOOLS_ANTHROPIC = convert_tools_to_anthropic(PROMPT_TOOLS)
 VALID_VARIABLE_PATTERNS = [
     # Account/Position variables
     r"total_equity", r"available_balance", r"margin_usage_percent", r"maintenance_margin",
-    r"positions_detail", r"recent_trades_summary", r"open_orders_detail",
+    r"positions_detail", r"recent_trades_summary", r"open_orders_detail", r"current_commission",
     # Context variables
     r"runtime_minutes", r"current_time_utc", r"trading_environment", r"selected_symbols_detail",
     r"trigger_context", r"news_section", r"output_format",
@@ -320,7 +320,7 @@ def _extract_variables_from_text(text: str) -> List[str]:
 # Account-related variables that need AI Trader binding (will show placeholders)
 ACCOUNT_VARIABLES = {
     "total_equity", "available_balance", "margin_usage_percent", "maintenance_margin",
-    "positions_detail", "recent_trades_summary", "open_orders_detail",
+    "positions_detail", "recent_trades_summary", "open_orders_detail", "current_commission",
     "runtime_minutes", "trading_environment", "trigger_context", "trigger_market_regime",
 }
 
@@ -359,6 +359,7 @@ def _execute_preview_prompt(args: Dict[str, Any], request_id: str) -> str:
     context["positions_detail"] = "[PLACEHOLDER: Will show actual positions when bound to AI Trader]"
     context["recent_trades_summary"] = "[PLACEHOLDER: Will show actual trades when bound to AI Trader]"
     context["open_orders_detail"] = "[PLACEHOLDER: Will show actual orders when bound to AI Trader]"
+    context["current_commission"] = "[PLACEHOLDER: Will show actual open orders when bound to AI Trader]"
     context["runtime_minutes"] = "[PLACEHOLDER: Will show actual runtime when AI Trader is running]"
     context["trading_environment"] = "[PLACEHOLDER: testnet or mainnet when bound to AI Trader]"
     context["trigger_context"] = "[PLACEHOLDER: Will show signal/scheduled trigger info at runtime]"

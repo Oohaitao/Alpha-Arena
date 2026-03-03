@@ -938,6 +938,84 @@ def _build_prompt_context(
             recent_trades_summary = f"Error fetching trade history: {str(e)[:100]}"
 
     # ============================================================================
+    # CURRENT COMMISSION (OPEN ORDERS)
+    # ============================================================================
+    current_commission = "No open orders"
+    if hyperliquid_state or exchange == "binance":
+        if environment in ("testnet", "mainnet"):
+            try:
+                from database.connection import SessionLocal
+
+                with SessionLocal() as db_session:
+                    open_orders = []
+
+                    if exchange == "binance":
+                        from services.binance_trading_client import BinanceTradingClient
+                        from database.models import BinanceWallet
+                        from utils.encryption import decrypt_private_key
+
+                        binance_wallet = db_session.query(BinanceWallet).filter(
+                            BinanceWallet.account_id == account.id,
+                            BinanceWallet.environment == environment,
+                            BinanceWallet.is_active == "true"
+                        ).first()
+
+                        if binance_wallet and binance_wallet.api_key_encrypted:
+                            api_key = decrypt_private_key(binance_wallet.api_key_encrypted)
+                            secret_key = decrypt_private_key(binance_wallet.secret_key_encrypted)
+                            client = BinanceTradingClient(
+                                api_key=api_key,
+                                secret_key=secret_key,
+                                environment=binance_wallet.environment or "testnet"
+                            )
+                            open_orders = client.get_open_orders_formatted(db_session)
+                    else:
+                        from services.hyperliquid_trading_client import get_cached_trading_client
+                        from database.models import HyperliquidWallet
+
+                        wallet = db_session.query(HyperliquidWallet).filter(
+                            HyperliquidWallet.account_id == account.id,
+                            HyperliquidWallet.environment == environment,
+                            HyperliquidWallet.is_active == "true"
+                        ).first()
+
+                        if wallet:
+                            from utils.encryption import decrypt_private_key
+                            private_key = decrypt_private_key(wallet.private_key_encrypted)
+                            client = get_cached_trading_client(
+                                account_id=account.id,
+                                private_key=private_key,
+                                environment=environment,
+                                wallet_address=wallet.wallet_address
+                            )
+                            open_orders = client.get_open_orders(db_session)
+
+                    if open_orders:
+                        order_lines = [f"Current open orders ({len(open_orders)} total):"]
+                        for order in open_orders:
+                            symbol = order.get('symbol', 'UNKNOWN')
+                            direction = order.get('direction', 'Unknown')
+                            order_type = order.get('order_type', 'Limit')
+                            price = order.get('price', 0)
+                            size = order.get('size', 0)
+                            order_value = order.get('order_value', 0)
+                            reduce_only = "Yes" if order.get('reduce_only', False) else "No"
+                            trigger_condition = order.get('trigger_condition')
+
+                            trigger_info = f"Trigger: {trigger_condition}" if trigger_condition else ""
+                            order_lines.append(
+                                f"- {symbol} {direction}: {order_type} @ ${price:,.2f} | "
+                                f"Size: {size:.5f} | Value: ${order_value:,.2f} | Reduce: {reduce_only} {trigger_info}"
+                            )
+                        current_commission = "\n".join(order_lines)
+                    else:
+                        current_commission = "No open orders"
+
+            except Exception as e:
+                logger.warning(f"Failed to get current commission: {e}", exc_info=True)
+                current_commission = f"Error fetching open orders: {str(e)[:100]}"
+
+    # ============================================================================
     # K-LINE AND TECHNICAL INDICATORS PROCESSING
     # ============================================================================
     # Process K-line and technical indicator variables if template_text is provided.
@@ -1263,6 +1341,8 @@ Regime Types:
         "positions_detail": positions_detail,
         # Recent trades history (NEW - helps AI understand trading patterns)
         "recent_trades_summary": recent_trades_summary,
+        # Current commission (open orders)
+        "current_commission": current_commission,
         # Last N trade reason (dynamic variable like {last_5_trade_reason})
         **last_trade_reason_context,
         # Trigger context (signal or scheduled trigger information)
