@@ -1950,11 +1950,30 @@ def call_ai_for_decision(
 
     # Market Regime variables are now generated inside _build_prompt_context
 
-    try:
-        prompt = template.template_text.format_map(SafeDict(context))
-    except Exception as exc:  # pragma: no cover - fallback rendering
-        logger.error("Failed to render prompt template '%s': %s", template.key, exc)
-        prompt = template.template_text
+    # Check for STATIC_PROMPT delimiter to split prompt into system and user parts
+    system_prompt_content = ""
+    if "=STATIC_PROMPT=" in template.template_text:
+        parts = template.template_text.split("=STATIC_PROMPT=", 1)
+        try:
+            system_prompt_raw = parts[0].format_map(SafeDict(context))
+        except Exception:
+            system_prompt_raw = parts[0]
+        
+        try:
+            user_prompt_raw = parts[1].format_map(SafeDict(context))
+        except Exception:
+            user_prompt_raw = parts[1]
+        
+        system_prompt_content = system_prompt_raw
+        user_prompt_content = user_prompt_raw
+        logger.debug("Split prompt using =STATIC_PROMPT= delimiter for account %s", account.id)
+    else:
+        try:
+            prompt = template.template_text.format_map(SafeDict(context))
+        except Exception as exc:  # pragma: no cover - fallback rendering
+            logger.error("Failed to render prompt template '%s': %s", template.key, exc)
+            prompt = template.template_text
+        user_prompt_content = prompt
 
     logger.debug("Using prompt template '%s' for account %s", template.key, account.id)
 
@@ -1964,9 +1983,18 @@ def call_ai_for_decision(
     # Enable streaming for deepseek-reasoner to handle high-load scenarios
     use_streaming = (account.model == "deepseek-reasoner")
 
+    # Build messages - use system prompt if STATIC_PROMPT delimiter was used
+    if system_prompt_content:
+        messages = [
+            {"role": "system", "content": system_prompt_content},
+            {"role": "user", "content": user_prompt_content}
+        ]
+    else:
+        messages = [{"role": "user", "content": user_prompt_content}]
+
     payload = build_llm_payload(
         model=account.model,
-        messages=[{"role": "user", "content": prompt}],
+        messages=messages,
         api_format="openai",
         stream=use_streaming,
     )
