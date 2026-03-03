@@ -6,7 +6,7 @@ echo "🔄 开始执行应用重建流程..."
 
 # 步骤 1: 停止所有由 docker-compose 启动的容器
 echo -e "\n[1/4] 停止 Docker Compose 容器..."
-docker compose stop
+docker-compose stop
 echo "✅ 成功停止所有 compose 容器"
 sleep 2
 
