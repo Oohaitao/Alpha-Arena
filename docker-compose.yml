@@ -99,3 +99,4 @@ volumes:
 networks:
   default:
     name: hyper-arena-network
+    external: true
