@@ -149,9 +149,20 @@ def initialize_services():
         logger.info("Market flow data cleanup task started (6-hour interval, 30-day retention)")
 
         # Start Binance data collector (REST API polling) - uses Binance Watchlist
-        # Only start if binance_data_enabled is not set to false
+        # Only start if binance_data_enabled is not set to false AND any Binance wallet is configured
         binance_data_enabled = os.getenv("BINANCE_DATA_ENABLED", "true").lower() == "true"
+        
+        # Check if any Binance wallet is configured with API keys
+        has_binance_wallet = False
         if binance_data_enabled:
+            from database.models import BinanceWallet
+            with SessionLocal() as db:
+                has_binance_wallet = db.query(BinanceWallet).filter(
+                    BinanceWallet.api_key_encrypted.isnot(None),
+                    BinanceWallet.is_active == "true"
+                ).first() is not None
+        
+        if binance_data_enabled and has_binance_wallet:
             from services.exchanges.binance_collector import binance_collector
             from services.binance_symbol_service import get_selected_symbols as get_binance_selected_symbols
             binance_watchlist = get_binance_selected_symbols()
@@ -166,8 +177,12 @@ def initialize_services():
             print("Binance WebSocket collector started")
             logger.info(f"[Binance] WebSocket collector started with symbols: {binance_watchlist}")
         else:
-            print("[Binance] Data collection disabled by BINANCE_DATA_ENABLED config")
-            logger.info("[Binance] Data collection disabled by BINANCE_DATA_ENABLED config")
+            if not has_binance_wallet:
+                print("[Binance] Data collection skipped - no Binance wallet configured")
+                logger.info("[Binance] Data collection skipped - no Binance wallet configured")
+            else:
+                print("[Binance] Data collection disabled by BINANCE_DATA_ENABLED config")
+                logger.info("[Binance] Data collection disabled by BINANCE_DATA_ENABLED config")
 
         logger.info("All services initialized successfully")
 

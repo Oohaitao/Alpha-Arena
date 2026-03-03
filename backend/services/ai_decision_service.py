@@ -1909,6 +1909,7 @@ def call_ai_for_decision(
         
         system_prompt_content = system_prompt_raw
         user_prompt_content = user_prompt_raw
+        prompt = f"{system_prompt_raw}\n\n{user_prompt_raw}"
         logger.debug("Split prompt using =STATIC_PROMPT= delimiter for account %s", account.id)
     else:
         try:
