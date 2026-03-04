@@ -429,7 +429,7 @@ OUTPUT_FORMAT_JSON = (
     '{\n'
     '  "decisions": [\n'
     '    {\n'
-    '      "operation": "buy" | "sell" | "hold" | "close",\n'
+    '      "operation": "buy" | "sell" | "hold" | "close" | "cancel",\n'
     '      "symbol": "<' + SYMBOL_PLACEHOLDER + '>",\n'
     '      "target_portion_of_balance": <float 0.0-1.0>,\n'
     '      "leverage": <integer 1-20>,\n'
@@ -462,8 +462,9 @@ Schema:
 {
 "decisions": [
 {
-"operation": "buy|sell|hold|close",
+"operation": "buy|sell|hold|close|cancel",
 "symbol": "ETH",
+"cancel_order_id": "Required if operation=cancel. Order ID to cancel (e.g., 337628877912)",
 "target_portion_of_balance": number,
 "leverage": integer,
 "max_price": number,
@@ -2515,15 +2516,17 @@ def save_ai_decision(
             # Don't fail the save operation if broadcast fails
             logger.warning(f"Failed to broadcast AI decision update: {broadcast_err}")
 
-        # Bot push notification for AI Trader decisions
+        # Bot push notification for AI Trader decisions (skip for HOLD operations)
         try:
             from api.bot_routes import get_notification_config_dict
             from services.bot_event_service import enqueue_system_event, push_event_to_all_channels
             notif_config = get_notification_config_dict(db)
-            if notif_config.get("ai_trader", True):
+            operation_upper = (operation or "hold").upper()
+            # Skip notification for HOLD operations
+            if notif_config.get("ai_trader", True) and operation_upper != "HOLD":
                 event_data = {
                     "trader_name": account.name,
-                    "operation": operation.upper() if operation else "HOLD",
+                    "operation": operation_upper,
                     "symbol": symbol or "N/A",
                     "target_portion": f"{target_portion:.1%}" if target_portion else "0%",
                     "price": "market",

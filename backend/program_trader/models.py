@@ -101,7 +101,7 @@ class Decision:
     Strategy decision output - aligned with AI Trader output_format.
 
     Required fields:
-    - operation: "buy" | "sell" | "hold" | "close"
+    - operation: "buy" | "sell" | "hold" | "close" | "cancel"
     - symbol: Trading symbol (e.g., "BTC")
     - reason: Explanation of the decision
     - trading_strategy: Entry thesis, risk controls, exit plan
@@ -112,6 +112,9 @@ class Decision:
     - max_price: required for "buy" or closing SHORT
     - min_price: required for "sell" or closing LONG
 
+    Required for cancel:
+    - order_id: Order ID to cancel (e.g., 337628877912 or "#337628877912")
+
     Optional with defaults:
     - time_in_force: "Ioc" | "Gtc" | "Alo" (default: "Ioc")
     - take_profit_price: trigger price for profit taking
@@ -120,7 +123,7 @@ class Decision:
     - sl_execution: "market" | "limit" (default: "limit")
     """
     # Always required
-    operation: str  # "buy" | "sell" | "hold" | "close"
+    operation: str  # "buy" | "sell" | "hold" | "close" | "cancel"
     symbol: str
     reason: str = ""
     trading_strategy: str = ""

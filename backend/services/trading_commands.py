@@ -613,7 +613,7 @@ def place_ai_driven_hyperliquid_order(
                     f"(portion: {target_portion:.2%}, leverage: {leverage}x, max_price: {max_price}, min_price: {min_price}) - {reason}"
                 )
 
-                if operation not in ["buy", "sell", "hold", "close"]:
+                if operation not in ["buy", "sell", "hold", "close", "cancel"]:
                     logger.warning(f"Invalid operation '{operation}' from AI for {account.name}")
                     save_ai_decision(db, account, decision, portfolio, executed=False, **decision_kwargs)
                     continue
@@ -624,6 +624,56 @@ def place_ai_driven_hyperliquid_order(
                     # the rule: TP/SL can only be set at entry, not modified during hold.
                     logger.info(f"AI decided to HOLD for {account.name} - no action taken")
                     save_ai_decision(db, account, decision, portfolio, executed=True, **decision_kwargs)
+                    continue
+
+                # Handle CANCEL operation - cancel specific order by order_id
+                if operation == "cancel":
+                    order_id = decision.get("cancel_order_id") or decision.get("order_id")
+                    if not order_id:
+                        logger.warning(f"CANCEL operation requires cancel_order_id but none provided for {account.name}")
+                        save_ai_decision(db, account, decision, portfolio, executed=False, **decision_kwargs)
+                        continue
+                    
+                    # Clean order_id (remove # prefix if present)
+                    order_id_str = str(order_id).strip()
+                    if order_id_str.startswith('#'):
+                        order_id_str = order_id_str[1:]
+                    
+                    try:
+                        order_id_int = int(order_id_str)
+                    except ValueError:
+                        logger.warning(f"Invalid order_id format: {order_id} for {account.name}")
+                        save_ai_decision(db, account, decision, portfolio, executed=False, **decision_kwargs)
+                        continue
+                    
+                    logger.info(f"[HYPERLIQUID {environment.upper()}] Cancelling order #{order_id_int} for {account.name}")
+                    
+                    # Get current open orders to find the symbol for this order
+                    try:
+                        open_orders = client.get_open_orders(db)
+                        target_order = None
+                        for o in open_orders:
+                            if o.get('order_id') == order_id_int:
+                                target_order = o
+                                break
+                        
+                        if not target_order:
+                            logger.warning(f"Order #{order_id_int} not found in open orders for {account.name}")
+                            save_ai_decision(db, account, decision, portfolio, executed=False, **decision_kwargs)
+                            continue
+                        
+                        target_symbol = target_order.get('symbol', symbol)
+                        
+                        # Cancel the order
+                        if client.cancel_order(db, order_id_int, target_symbol):
+                            logger.info(f"✅ Successfully cancelled order #{order_id_int} for {target_symbol}")
+                            save_ai_decision(db, account, decision, portfolio, executed=True, **decision_kwargs)
+                        else:
+                            logger.warning(f"Failed to cancel order #{order_id_int} for {account.name}")
+                            save_ai_decision(db, account, decision, portfolio, executed=False, **decision_kwargs)
+                    except Exception as cancel_err:
+                        logger.error(f"Error cancelling order #{order_id_int}: {cancel_err}")
+                        save_ai_decision(db, account, decision, portfolio, executed=False, **decision_kwargs)
                     continue
 
                 if symbol not in symbol_whitelist:
@@ -1502,7 +1552,7 @@ def _execute_binance_decision(
     )
 
     # 1. Validate operation type
-    if operation not in ["buy", "sell", "hold", "close"]:
+    if operation not in ["buy", "sell", "hold", "close", "cancel"]:
         logger.warning(f"[BINANCE] Invalid operation '{operation}' from AI for {account.name}")
         save_ai_decision(db, account, decision, portfolio, executed=False, **decision_kwargs)
         return

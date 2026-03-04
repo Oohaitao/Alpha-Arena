@@ -236,12 +236,16 @@ def validate_decision(decision: Decision, positions: Dict[str, Any] = None) -> t
     op = decision.operation.lower() if decision.operation else ""
 
     # Check operation is valid
-    if op not in ("buy", "sell", "hold", "close"):
-        errors.append(f"Invalid operation: '{decision.operation}'. Must be buy/sell/hold/close")
+    if op not in ("buy", "sell", "hold", "close", "cancel"):
+        errors.append(f"Invalid operation: '{decision.operation}'. Must be buy/sell/hold/close/cancel")
         return False, errors
 
     # For hold, minimal validation
     if op == "hold":
+        return True, []
+
+    # For cancel, no further validation needed
+    if op == "cancel":
         return True, []
 
     # For buy/sell/close, check required fields
