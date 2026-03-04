@@ -81,8 +81,10 @@ services:
       - ./backend/main.py:/app/backend/main.py
       - ./backend/models.py:/app/backend/models.py
 
-      # DO NOT mount ./backend/static - it must remain from the Docker image build
-      # ===============================================================
+      # Frontend static files (for hot reload during development)
+      # After updating frontend code, run: cd frontend && pnpm build
+      # Then the changes will be available after container restart
+      - ./frontend/dist:/app/backend/static:ro
 
       # Mount logs
       - ./logs:/app/logs

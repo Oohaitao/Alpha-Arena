@@ -1,6 +1,5 @@
-import { BarChart3, FileText, NotebookPen, Coins, MessageSquare, Mail, Bot, Ghost, ScrollText, Settings } from 'lucide-react'
+import { BarChart3, FileText, NotebookPen, Coins, MessageSquare, Bot, Ghost, ScrollText, Settings } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import ContactDialog from '@/components/contact/ContactDialog'
 
 // AI Trader icon component (custom SVG)
 const AITraderIcon = ({ className }: { className?: string }) => (
@@ -144,25 +143,6 @@ export default function Sidebar({ currentPage = 'comprehensive', onPageChange, o
               </button>
             )
           })}
-
-          <button
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:text-[#B8860B] text-muted-foreground"
-            onClick={() => window.open('https://www.akooi.com/docs/guide/getting-started.html', '_blank', 'noopener,noreferrer')}
-            title={t('sidebar.howToUse', 'How to Use')}
-          >
-            <HowToUseIcon className="w-5 h-5 flex-shrink-0" />
-            <span>{t('sidebar.howToUse', 'How to Use')}</span>
-          </button>
-
-          <ContactDialog>
-            <button
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:text-[#B8860B] text-muted-foreground"
-              title={t('contact.contactAuthor', 'Contact Author')}
-            >
-              <Mail className="w-5 h-5 flex-shrink-0" />
-              <span>{t('contact.contactAuthor', 'Contact Author')}</span>
-            </button>
-          </ContactDialog>
 
           {/* Settings */}
           <button
