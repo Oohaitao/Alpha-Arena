@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import {
   approveBuilder,
   checkBuilderAuthorization,
-  disableTrading,
   UnauthorizedAccount
 } from '@/lib/api'
 
@@ -35,7 +34,6 @@ export default function AuthorizationModal({
   onAuthorizationComplete
 }: AuthorizationModalProps) {
   const [accountStates, setAccountStates] = useState<Record<number, AccountAuthState>>({})
-  const [closing, setClosing] = useState(false)
 
   if (!isOpen) return null
 
@@ -94,21 +92,7 @@ export default function AuthorizationModal({
     }
   }
 
-  const handleClose = async () => {
-    setClosing(true)
-    const unauthorizedIds = unauthorizedAccounts
-      .filter(acc => !getAccountState(acc.account_id).authorized)
-      .map(acc => acc.account_id)
-
-    for (const accountId of unauthorizedIds) {
-      try {
-        await disableTrading(accountId)
-      } catch (error) {
-        console.error(`Failed to disable trading for account ${accountId}:`, error)
-      }
-    }
-    setClosing(false)
-    // Clear account states to ensure clean state on next open
+  const handleClose = () => {
     setAccountStates({})
     onClose()
   }
@@ -132,10 +116,9 @@ export default function AuthorizationModal({
               variant="ghost"
               size="sm"
               onClick={handleClose}
-              disabled={closing}
               className="h-8 w-8 p-0 flex-shrink-0 ml-2"
             >
-              {closing ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -194,11 +177,6 @@ export default function AuthorizationModal({
           })}
         </div>
 
-        <div className="p-4 border-t bg-muted/30">
-          <p className="text-xs text-center text-muted-foreground">
-            ⚠️ Closing this dialog will disable AI trading for unauthorized accounts
-          </p>
-        </div>
       </div>
     </div>,
     document.body
