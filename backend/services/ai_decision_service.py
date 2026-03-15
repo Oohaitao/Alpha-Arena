@@ -474,7 +474,7 @@ Schema:
 "stop_loss_price": number,
 "tp_execution": "limit|market",
 "sl_execution": "limit|market",
-"reason": "Format for reason: [State]|[Dir]|E=total/threshold|S=s,F=f,M=m,V=v,MM=mm,RR=rr,SW=sw|Act=...|Key=... ] Example: [TREND_EXHAUSTION]|[NEUTRAL]|E=44/68|S=8,F=10,M=15,V=5,MM=6,RR=0,SW=0|Act=Hold|Key=WaitConfirm",
+"reason": "Must match the REASON STRING FORMAT CRITICAL pattern exactly.",
 "trading_strategy": string
 }
 ]
