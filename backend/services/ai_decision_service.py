@@ -474,7 +474,7 @@ Schema:
 "stop_loss_price": number,
 "tp_execution": "limit|market",
 "sl_execution": "limit|market",
-"reason": "≤120 chars. Format: [State]|[Dir]|E=score/th|Act=Probe/Full/Add/Hold|Key=signals|SL=type|TP=RR",
+"reason": "Format for reason: [State]|[Dir]|E=total/threshold|S=s,F=f,M=m,V=v,MM=mm,RR=rr,SW=sw|Act=...|Key=... ] Example: [TREND_EXHAUSTION]|[NEUTRAL]|E=44/68|S=8,F=10,M=15,V=5,MM=6,RR=0,SW=0|Act=Hold|Key=WaitConfirm",
 "trading_strategy": string
 }
 ]
