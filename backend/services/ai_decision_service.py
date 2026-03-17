@@ -1962,9 +1962,9 @@ def call_ai_for_decision(
 
         # Reasoning models need longer timeout (they think more, respond slower)
         if is_reasoning_model(account.model):
-            request_timeout = 240
+            request_timeout = 360
         else:
-            request_timeout = 120
+            request_timeout = 360
 
         for endpoint in endpoints:
             for attempt in range(max_retries):
